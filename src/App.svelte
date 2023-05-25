@@ -1,10 +1,11 @@
 <script>
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import Dexie from "dexie";
+  import TaskList from "./TaskList.svelte";
 
   const db = new Dexie("TodoDB");
   db.version(1).stores({
-    todos: "++id,text,completed,timestamp",
+    todos: "++id,text,startOfStreak,lastCompleted",
   });
 
   let tasks = [];
@@ -14,8 +15,8 @@
     if (newTask.trim() !== "") {
       const task = {
         text: newTask,
-        completed: false,
-        timestamp: Date.now(),
+        startOfStreak: Date.now(),
+        lastCompleted: Date.now(),
       };
       await db.todos.add(task);
       tasks = [...tasks, task];
@@ -23,36 +24,47 @@
     }
   }
 
+  async function resetStreak(task) {
+    const currentTime = Date.now();
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    // Reset streak if the task hasn't been completed within 24 hours
+    if (
+      task.lastCompleted != null &&
+      currentTime - task.lastCompleted > twentyFourHours
+    ) {
+      task.startOfStreak = currentTime;
+      task.lastCompleted = currentTime;
+
+      await db.todos.update(task.id, {
+        lastCompleted: null,
+        startOfStreak: currentTime,
+      });
+      // Load tasks from database
+      tasks = await db.todos.toArray();
+
+      return true;
+    }
+
+    return false;
+  }
+
   async function completeTask(id) {
-    await db.todos.update(id, { completed: true });
-    tasks = tasks.map((task) => {
-      if (task.id === id) {
-        return { ...task, completed: true };
-      }
-      return task;
+    const task = tasks.find((t) => t.id === id);
+    if (await resetStreak(task)) return;
+    await db.todos.update(id, {
+      lastCompleted: Date.now(),
+      startOfStreak: task.startOfStreak,
     });
+    tasks = await db.todos.toArray();
   }
 
   async function removeTask(id) {
     await db.todos.delete(id);
-    tasks = tasks.filter((task) => task.id !== id);
+    tasks = await db.todos.toArray();
   }
 
   async function markTasksAsUncompleted() {
-    const currentTime = Date.now();
-    const updatedTasks = tasks.map((task) => {
-      if (
-        task.completed &&
-        currentTime - task.timestamp >= 24 * 60 * 60 * 1000
-      ) {
-        return { ...task, completed: false };
-      }
-      return task;
-    });
-    tasks = updatedTasks;
-    await Promise.all(
-      updatedTasks.map((task) => db.todos.update(task.id, { completed: task.completed }))
-    );
+    await Promise.all(tasks.map((task) => resetStreak(task)));
   }
 
   onMount(async () => {
@@ -62,30 +74,23 @@
     // Mark tasks as uncompleted after 24 hours
     markTasksAsUncompleted();
   });
+
+  onDestroy(() => {
+    // Clean up any resources before component is destroyed
+    db.close();
+  });
 </script>
 
 <main>
-  <h1>Todo App</h1>
+  <h1>Streaks App</h1>
 
-  <input type="text" bind:value="{newTask}" placeholder="Enter a new task" />
+  <input type="text" bind:value={newTask} placeholder="Enter a new task" />
 
-  <button on:click="{addTask}">Add Task</button>
+  <button on:click={addTask}>Add Task</button>
 
-  <ul>
-    {#each tasks as task}
-      <li
-        class="{task.completed ? 'completed' : ''}"
-        on:click="{() => completeTask(task.id)}"
-      >
-        {task.text}
-        <button on:click="{() => removeTask(task.id)}">Remove</button>
-      </li>
-    {/each}
-  </ul>
+  <TaskList {tasks} {completeTask} {removeTask} />
 </main>
 
 <style>
-  .completed {
-    text-decoration: line-through;
-  }
+  /* Styles for the main App component */
 </style>
