@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import Dexie from "dexie";
   import TaskList from "./TaskList.svelte";
+  import AddTask from "./AddTask.svelte";
 
   const db = new Dexie("TodoDB");
   db.version(1).stores({
@@ -9,9 +10,8 @@
   });
 
   let tasks = [];
-  let newTask = "";
 
-  async function addTask() {
+  async function addTask(newTask) {
     if (newTask.trim() !== "") {
       const task = {
         text: newTask,
@@ -81,14 +81,15 @@
   });
 </script>
 
-<main>
-  <h1>Streaks App</h1>
+<main class="h-screen	flex justify-center mt-9">
+  <div class="w-full md:w-2/5 mx-5">
+    <div>
+      <h1 class="text-4xl font-extrabold dark:text-white mb-10">Streaks ⚡</h1>
+      <AddTask {addTask} />
+    </div>
 
-  <input type="text" bind:value={newTask} placeholder="Enter a new task" />
-
-  <button on:click={addTask}>Add Task</button>
-
-  <TaskList {tasks} {completeTask} {removeTask} />
+    <TaskList {tasks} {completeTask} {removeTask} />
+  </div>
 </main>
 
 <style>

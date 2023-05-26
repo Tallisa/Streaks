@@ -6,7 +6,7 @@
   export let removeTask;
 </script>
 
-<ul>
+<ul class="mt-9">
   {#each tasks as task}
     <Task {task} {completeTask} {removeTask} />
   {/each}
