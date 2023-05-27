@@ -11,14 +11,15 @@
   let minsLeft;
   let interval; // Variable to store the interval ID
 
-  const twentyFourHours = 24 * 60 * 60 * 1000;
+  const timeOutDelay = 48 * 60 * 60 * 1000;
+
 
   const calculateStreak = () => {
     const startOfStreak =
       task.startOfStreak == Date.now() ? 0 : task.startOfStreak;
     const currentTime = Date.now();
     const timeElapsed = currentTime - startOfStreak;
-    const streakDays = Math.floor(timeElapsed / twentyFourHours);
+    const streakDays = Math.floor(timeElapsed / timeOutDelay);
 
     if (streakDays < 1) {
       streak = "🏁";
@@ -28,7 +29,7 @@
   };
 
   const calculateDeadline = () => {
-    const deadline = task.lastCompleted + twentyFourHours - Date.now();
+    const deadline = task.lastCompleted + timeOutDelay - Date.now();
     hoursLeft = Math.floor(deadline / (60 * 60 * 1000));
     minsLeft = Math.floor(deadline / (60 * 1000));
     if (hoursLeft <= 1) {
@@ -40,8 +41,8 @@
 
   const changeFontColor = (value) => {
     // Adjust the scale from 0-23 to 0-100
-    var adjustedValue = 23 - value;
-    var percentage = (adjustedValue / 23) * 100;
+    var adjustedValue = 48 - value;
+    var percentage = (adjustedValue / 48) * 100;
   
     // Apply an ease-in effect using a cubic-bezier function
     var easingPercentage = cubicBezierEaseIn(percentage / 100);

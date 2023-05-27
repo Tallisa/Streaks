@@ -50,12 +50,12 @@
 
   async function resetStreak(task) {
     const currentTime = Date.now();
-    const twentyFourHours = 24 * 60 * 60 * 1000;
+    const timeOutDelay = 48 * 60 * 60 * 1000;
 
     // Reset streak if the task hasn't been completed within 24 hours
     if (
       task.lastCompleted != null &&
-      currentTime - task.lastCompleted > twentyFourHours
+      currentTime - task.lastCompleted > timeOutDelay
     ) {
       logEvent(analytics, 'streak_expired', {
         startOfStreak: task.startOfStreak,
@@ -140,7 +140,7 @@
     // Load tasks from Firestore
     tasks = await loadTasks();
 
-    // Mark tasks as uncompleted after 24 hours
+    // Mark tasks as uncompleted after timeout hours
     markTasksAsUncompleted();
   });
 
