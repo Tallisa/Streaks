@@ -18,10 +18,11 @@
     "vite-plugin-pwa": "^0.15.0"
   },
   "dependencies": {
-    "@popperjs/core": "^2.11.7",
+    "@popperjs/core": "^2.11.8",
     "classnames": "^2.3.2",
     "dexie": "^4.0.1-alpha.11",
+    "firebase": "^9.22.1",
     "flowbite": "^1.6.5",
-    "flowbite-svelte": "^0.36.5"
+    "flowbite-svelte": "^0.29.7"
   }
 }

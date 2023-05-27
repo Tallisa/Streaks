@@ -1,6 +1,5 @@
 <script>
-  import { onMount, onDestroy } from "svelte";
-  // import TaskCompleteConfirmation from "./TaskCompleteConfirmation.svelte";
+  import { onMount, onDestroy, afterUpdate } from "svelte";
 
   export let task;
   export let completeTask;
@@ -32,7 +31,7 @@
     const deadline = task.lastCompleted + twentyFourHours - Date.now();
     hoursLeft = Math.floor(deadline / (60 * 60 * 1000));
     minsLeft = Math.floor(deadline / (60 * 1000));
-    if (hoursLeft >= 1) {
+    if (hoursLeft <= 1) {
       expireTime = `${minsLeft} mins left`;
     } else {
       expireTime = `${hoursLeft} hours left`;
@@ -43,28 +42,31 @@
     // Adjust the scale from 0-23 to 0-100
     var adjustedValue = 23 - value;
     var percentage = (adjustedValue / 23) * 100;
-
-    // Calculate the intermediate color values
-    var r = Math.round((255 - 120) * (percentage / 100) + 120);
-    var g = Math.round((0 - 113) * (percentage / 100) + 113);
-    var b = Math.round((0 - 108) * (percentage / 100) + 108);
-
+  
+    // Apply an ease-in effect using a cubic-bezier function
+    var easingPercentage = cubicBezierEaseIn(percentage / 100);
+  
+    // Calculate the intermediate color values with the eased percentage
+    var r = Math.round((255 - 120) * easingPercentage + 120);
+    var g = Math.round((0 - 113) * easingPercentage + 113);
+    var b = Math.round((0 - 108) * easingPercentage + 108);
+  
     // Create the color string in RGB format
     var color = "rgb(" + r + "," + g + "," + b + ")";
-
+  
     // Set the background color of the div
     document.getElementById(`timeLeft_${task.id}`).style.color = color;
+  };
+  
+  // Easing function (Cubic Bezier Ease-In)
+  const cubicBezierEaseIn = (t) => {
+    return t * t * t;
   };
 
   const recalculate = () => {
     calculateDeadline();
     calculateStreak();
     changeFontColor(hoursLeft);
-  };
-
-  const onComplete = async () => {
-    await completeTask(task.id);
-    recalculate();
   };
 
   onMount(() => {
@@ -79,6 +81,12 @@
     // Clear the interval when the component is destroyed
     clearInterval(interval);
   });
+
+  afterUpdate(() => {
+    calculateDeadline();
+    calculateStreak();
+    changeFontColor(hoursLeft);
+  })
 </script>
 
 <li>
@@ -97,7 +105,7 @@
         class="px-1"
         data-modal-target={`popup-modal-${task.id}`}
         data-modal-toggle={`popup-modal-${task.id}`}
-        on:click={() => onComplete()}
+        on:click={() => completeTask(task)}
         type="button"
       >
         <svg
@@ -116,7 +124,7 @@
           />
         </svg>
       </button>
-      <button class="pl-1" on:click={() => removeTask(task.id)}>
+      <button class="pl-1" on:click={() => removeTask(task)}>
         <svg
           fill="none"
           class="w-6 h-6 text-red-600 hover:bg-red-200"

@@ -13,7 +13,7 @@ export default defineConfig({
       scope: '/',
       display: 'standalone',
       theme_color: "#ffffff",
-      background_color: "#000000",
+      background_color: "#ffffff",
       icons: [
         {
           "src": "icons/icon-72x72.png",
@@ -64,11 +64,6 @@ export default defineConfig({
           "purpose": "any"
         }
       ],
-    },
-    devOptions: {
-      enabled: true,
-      type: 'module',
-      navigateFallback: '/',
     }
   })],
   server: {
