@@ -3,7 +3,10 @@
   import TaskView from "./TaskView.svelte"
   import AuthView from "./AuthView.svelte"
   import { auth } from './lib/firebase.js';
-
+  // import { registerSW } from 'virtual:pwa-register';
+  
+  // registerSW({ immediate: true })
+  
   let user = null;
   let loading = true;
 

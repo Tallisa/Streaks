@@ -1,13 +1,13 @@
 <script>
   import { auth } from './lib/firebase.js';
-  import { GoogleAuthProvider, signInWithRedirect } from "firebase/auth";
+  import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
   const provider = new GoogleAuthProvider();
 
 
 
   async function loginWithGoogle() {
     try {
-      const result = await signInWithRedirect(auth, provider);
+      const result = await signInWithPopup(auth, provider);
       const user = result.user;
       console.log('Logged in user:', user);
       // Handle successful login
