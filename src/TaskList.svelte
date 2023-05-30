@@ -1,8 +1,7 @@
 <script>
   import Task from "./Task.svelte";
   import TaskCompleteConfirmation from "./TaskCompleteConfirmation.svelte";
-  import TaskDeleteConfirmation from "./TaskDeleteConfirmation.svelte"
-  
+  import TaskDeleteConfirmation from "./TaskDeleteConfirmation.svelte";
 
   let currentTask;
   let openOnCompleteModal = false;
@@ -15,30 +14,30 @@
   const onCompleteTask = (task) => {
     currentTask = task;
     openOnCompleteModal = true;
-  }
+  };
 
   const onDeleteTask = (task) => {
     currentTask = task;
     openOnDeleteModal = true;
-  }
+  };
 
   const onConfirmCompletion = (task) => {
     openOnCompleteModal = false;
     currentTask = null;
     completeTask(task.id);
-  }
+  };
 
   const onConfirmDeletion = (task) => {
     openOnDeleteModal = false;
     currentTask = null;
     removeTask(task.id);
-  }
+  };
 
   const onCancel = (task) => {
     openOnCompleteModal = false;
     openOnDeleteModal = false;
     currentTask = null;
-  }
+  };
 </script>
 
 <ul class="mt-9">
@@ -46,10 +45,20 @@
     <Task {task} completeTask={onCompleteTask} removeTask={onDeleteTask} />
   {/each}
   {#if openOnCompleteModal === true}
-    <TaskCompleteConfirmation task={currentTask} popupModal={openOnCompleteModal} onConfirm={onConfirmCompletion} onCancel={onCancel} />
+    <TaskCompleteConfirmation
+      task={currentTask}
+      popupModal={openOnCompleteModal}
+      onConfirm={onConfirmCompletion}
+      {onCancel}
+    />
   {/if}
   {#if openOnDeleteModal === true}
-    <TaskDeleteConfirmation task={currentTask} popupModal={openOnDeleteModal} onConfirm={onConfirmDeletion} onCancel={onCancel} />
+    <TaskDeleteConfirmation
+      task={currentTask}
+      popupModal={openOnDeleteModal}
+      onConfirm={onConfirmDeletion}
+      {onCancel}
+    />
   {/if}
 </ul>
 

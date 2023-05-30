@@ -12,14 +12,16 @@
   let interval; // Variable to store the interval ID
 
   const timeOutDelay = 48 * 60 * 60 * 1000;
-
+  const streakDelay = 24 * 60 * 60 * 1000;
 
   const calculateStreak = () => {
     const startOfStreak =
-      task.startOfStreak == Date.now() ? 0 : task.startOfStreak;
+      task.startOfStreak.getTime() == Date.now()
+        ? 0
+        : task.startOfStreak.getTime();
     const currentTime = Date.now();
     const timeElapsed = currentTime - startOfStreak;
-    const streakDays = Math.floor(timeElapsed / timeOutDelay);
+    const streakDays = Math.floor(timeElapsed / streakDelay);
 
     if (streakDays < 1) {
       streak = "🏁";
@@ -29,7 +31,7 @@
   };
 
   const calculateDeadline = () => {
-    const deadline = task.lastCompleted + timeOutDelay - Date.now();
+    const deadline = task.lastCompleted.getTime() + timeOutDelay - Date.now();
     hoursLeft = Math.floor(deadline / (60 * 60 * 1000));
     minsLeft = Math.floor(deadline / (60 * 1000));
     if (hoursLeft <= 1) {
@@ -43,22 +45,22 @@
     // Adjust the scale from 0-23 to 0-100
     var adjustedValue = 48 - value;
     var percentage = (adjustedValue / 48) * 100;
-  
+
     // Apply an ease-in effect using a cubic-bezier function
     var easingPercentage = cubicBezierEaseIn(percentage / 100);
-  
+
     // Calculate the intermediate color values with the eased percentage
     var r = Math.round((255 - 120) * easingPercentage + 120);
     var g = Math.round((0 - 113) * easingPercentage + 113);
     var b = Math.round((0 - 108) * easingPercentage + 108);
-  
+
     // Create the color string in RGB format
     var color = "rgb(" + r + "," + g + "," + b + ")";
-  
+
     // Set the background color of the div
     document.getElementById(`timeLeft_${task.id}`).style.color = color;
   };
-  
+
   // Easing function (Cubic Bezier Ease-In)
   const cubicBezierEaseIn = (t) => {
     return t * t * t;
@@ -87,11 +89,11 @@
     calculateDeadline();
     calculateStreak();
     changeFontColor(hoursLeft);
-  })
+  });
 </script>
 
 <li>
-  <div class="flex flex-row my-3 px-2 ">
+  <div class="flex flex-row my-3 px-2">
     <div class="flex-grow limit-overflow">
       <div class="break-words text-lg font-normal text-gray-800">
         {task.text}
