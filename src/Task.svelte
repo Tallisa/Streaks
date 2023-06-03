@@ -15,12 +15,12 @@
   const streakDelay = 24 * 60 * 60 * 1000;
 
   const calculateStreak = () => {
-    const startOfStreak =
-      task.startOfStreak.getTime() == Date.now()
-        ? 0
-        : task.startOfStreak.getTime();
+    if (task.startOfStreak == null) {
+      streak = "🏁";
+      return;
+    }
     const currentTime = Date.now();
-    const timeElapsed = currentTime - startOfStreak;
+    const timeElapsed = currentTime - task.startOfStreak.getTime();
     const streakDays = Math.floor(timeElapsed / streakDelay);
 
     if (streakDays < 1) {
@@ -31,6 +31,13 @@
   };
 
   const calculateDeadline = () => {
+    if (task.lastCompleted == null) {
+      expireTime = `expired`;
+      hoursLeft = 0;
+      minsLeft = 0;
+      task.startOfStreak = null;
+      return;
+    }
     const deadline = task.lastCompleted.getTime() + timeOutDelay - Date.now();
     hoursLeft = Math.floor(deadline / (60 * 60 * 1000));
     minsLeft = Math.floor(deadline / (60 * 1000));
@@ -102,8 +109,8 @@
         <span class="ml-auto">{expireTime}</span>
       </div>
     </div>
-    <div class="ml-auto my-auto w-28 flex flex-row justify-end">
-      <div class="pl-2 pr-1 h-6">{streak}</div>
+    <div class="ml-auto my-auto w-auto flex flex-row justify-end">
+      <div class="pl-2 pr-1 h-6 streak">{streak}</div>
       <button
         class="px-1"
         data-modal-target={`popup-modal-${task.id}`}
@@ -151,5 +158,9 @@
 <style>
   .limit-overflow {
     max-width: 247px;
+  }
+  .streak {
+    width: 75px;
+    text-align: right;
   }
 </style>

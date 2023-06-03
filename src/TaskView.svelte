@@ -13,6 +13,7 @@
   import { logEvent } from "firebase/analytics";
   import TaskList from "./TaskList.svelte";
   import AddTask from "./AddTask.svelte";
+  import Notification from "./Notification.svelte";
   import { ListPlaceholder } from "flowbite-svelte";
   import { Button } from "flowbite-svelte";
 
@@ -89,7 +90,7 @@
       // Update the task in Firestore
       await updateTasksInFirestore(docRef, {
         lastCompleted: null,
-        startOfStreak: currentTime,
+        startOfStreak: null,
       });
 
       return true;
@@ -191,30 +192,33 @@
     <div>
       <div class="flex justify-between mb-10">
         <h1 class="text-4xl font-extrabold dark:text-white">Streaks ⚡</h1>
-        <Button
-          color="red"
-          pill={true}
-          outline={true}
-          class="!p-2"
-          size="xl"
-          on:click={async () => await signOut(auth)}
-        >
-          <svg
-            class="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
+        <div>
+          <Notification />
+          <Button
+            color="red"
+            pill={true}
+            outline={true}
+            class="!p-2 ml-3"
+            size="xl"
+            on:click={async () => await signOut(auth)}
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
-            />
-          </svg>
-        </Button>
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
+              />
+            </svg>
+          </Button>
+        </div>
       </div>
       <AddTask {addTask} />
     </div>
