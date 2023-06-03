@@ -23,6 +23,9 @@
     "dexie": "^4.0.1-alpha.11",
     "firebase": "^9.22.1",
     "flowbite": "^1.6.5",
-    "flowbite-svelte": "^0.29.7"
+    "flowbite-svelte": "^0.29.7",
+    "workbox-core": "^7.0.0",
+    "workbox-precaching": "^7.0.0",
+    "workbox-routing": "^7.0.0"
   }
 }
