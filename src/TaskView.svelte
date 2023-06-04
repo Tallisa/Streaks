@@ -18,25 +18,21 @@
   import { Button } from "flowbite-svelte";
 
   let tasks = null;
-  const timeOutDelay = 48 * 60 * 60 * 1000;
-  const streakDelay = 24 * 60 * 60 * 1000;
+  const timeMultiplier = 60 * 1000;
   export let currentUid;
 
-  async function updateTasksInState(updatedTasks) {
-    tasks = updatedTasks;
-  }
-
-  async function updateTasksInFirestore(docRef, data) {
-    await updateDoc(docRef, data);
-    tasks = await loadTasks();
-  }
-
-  async function addTask(newTask) {
+  const addTask = async (newTask) => {
     if (newTask.trim() !== "") {
       const task = {
         text: newTask,
-        startOfStreak: new Date(), // Store as Date object
-        lastCompleted: new Date(), // Store as Date object
+        description: "",
+        streak: 0,
+        taskDuration: 24 * 60,
+        timeOutDelay: 48 * 60,
+        startOfStreak: new Date(),
+        lastCompleted: new Date(),
+        expireAt: new Date(Date.now() + (48 * 60 * timeMultiplier)),
+        ...getReminder(48 * 60)
       };
 
       // Update local state optimistically
@@ -59,75 +55,22 @@
       tasks[index] = tempTask;
     }
   }
-
-  async function resetStreak(task) {
-    const currentTime = new Date();
-
-    // Reset streak if the task hasn't been completed within 24 hours
-    if (
-      task.lastCompleted != null &&
-      currentTime.getTime() - task.lastCompleted.getTime() > timeOutDelay
-    ) {
-      logEvent(analytics, "streak_expired", {
-        startOfStreak: task.startOfStreak,
-        lastCompleted: task.lastCompleted,
-        currentTime: new Date(),
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        streak: calculateStreak(task),
-      });
-
-      task.startOfStreak = currentTime;
-      task.lastCompleted = currentTime;
-
-      // Update local state optimistically
-      const updatedTasks = [...tasks];
-      const index = updatedTasks.findIndex((t) => t.id === task.id);
-      updatedTasks[index] = task;
-      updateTasksInState(updatedTasks);
-
-      const docRef = doc(firestore, `users/${currentUid}/tasks`, task.id);
-
-      // Update the task in Firestore
-      await updateTasksInFirestore(docRef, {
-        lastCompleted: null,
-        startOfStreak: null,
-      });
-
-      return true;
-    }
-
-    return false;
-  }
-
-  function calculateStreak(task) {
-    const startOfStreak =
-      task.startOfStreak.getTime() == Date.now()
-        ? 0
-        : task.startOfStreak.getTime();
-    const currentTime = Date.now();
-    const timeElapsed = currentTime - startOfStreak;
-    const streakDays = Math.floor(timeElapsed / streakDelay);
-    return streakDays;
-  }
-
-  async function completeTask(id) {
+  
+  const completeTask = async (id) => {
     const task = tasks.find((t) => t.id === id);
-
-    if (await resetStreak(task)) return;
 
     logEvent(analytics, "streak_extended", {
       minutesLeft:
-        (new Date().getTime() - task.startOfStreak.getTime()) / 60 / 1000,
+        (new Date().getTime() - task.expireAt.getTime()) / 60 / 1000,
     });
-
-    if (calculateStreak(task) === 7) {
-      logEvent(analytics, "one_week_streak");
-    }
 
     // Update local state optimistically
     const updatedTasks = [...tasks];
     const index = updatedTasks.findIndex((t) => t.id === task.id);
     updatedTasks[index].lastCompleted = new Date();
+    updatedTasks[index].expireAt = new Date(Date.now() + (task.timeOutDelay * timeMultiplier));
+    updatedTasks[index] = {...updatedTasks[index], ...getReminder(task.timeOutDelay)}
+    
     updateTasksInState(updatedTasks);
 
     const docRef = doc(firestore, `users/${currentUid}/tasks`, id);
@@ -135,11 +78,13 @@
     // Update the task in Firestore
     await updateTasksInFirestore(docRef, {
       lastCompleted: new Date(),
+      expireAt: new Date(Date.now() + (task.timeOutDelay * timeMultiplier)),
       startOfStreak: task.startOfStreak,
+      ...getReminder(task.timeOutDelay)
     });
   }
 
-  async function removeTask(id) {
+  const removeTask = async (id) => {
     // Update local state optimistically
     const updatedTasks = tasks.filter((t) => t.id !== id);
     updateTasksInState(updatedTasks);
@@ -152,7 +97,7 @@
     logEvent(analytics, "task_removed");
   }
 
-  async function loadTasks() {
+  const loadTasks = async () =>  {
     const userCollectionRef = collection(
       firestore,
       `users/${currentUid}/tasks`
@@ -167,24 +112,44 @@
       startOfStreak: doc.data().startOfStreak
         ? doc.data().startOfStreak.toDate()
         : null,
+      expireAt: doc.data().expireAt
+        ? doc.data().expireAt.toDate()
+        : null,
+      timeOutDelay: doc.data().timeOutDelay
+        ? doc.data().timeOutDelay
+        : 48 * 60,
     }));
   }
 
-  async function markTasksAsUncompleted() {
-    await Promise.all(tasks.map((task) => resetStreak(task)));
+  const updateTasksInState = (updatedTasks) => {
+    tasks = updatedTasks;
+  }
+
+  const updateTasksInFirestore = async (docRef, data) => {
+    await updateDoc(docRef, data);
+    tasks = await loadTasks();
+  }
+
+  const getReminder = (timeOutDelay) => {
+    const halfWay = new Date(Date.now() + ((timeOutDelay * timeMultiplier)/2));
+    const expireAt = new Date(Date.now() + (timeOutDelay * timeMultiplier));
+    const fiveHoursBefore = new Date(expireAt.getTime() - (5 * 60 * timeMultiplier));
+    const thirtyMinsBefore = new Date(expireAt.getTime() - (30 * timeMultiplier));
+
+    return {
+      'nextReminder': {'type': 'half_way', 'time': halfWay},
+      'reminders': [
+        {'type': 'five_hours_left', 'time': fiveHoursBefore},
+        {'type': 'thirty_minutes_left', 'time': thirtyMinsBefore},
+        {'type': 'expired', 'time': expireAt},
+      ]
+    }
   }
 
   onMount(async () => {
-    // Load tasks from Firestore
     tasks = await loadTasks();
-
-    // Mark tasks as uncompleted after timeout hours
-    markTasksAsUncompleted();
   });
 
-  onDestroy(() => {
-    // Clean up any resources before component is destroyed
-  });
 </script>
 
 <main class="flex justify-center mt-9">

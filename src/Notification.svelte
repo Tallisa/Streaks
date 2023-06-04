@@ -7,7 +7,7 @@
   import { updateDoc, doc, arrayUnion, arrayRemove, getDoc } from "firebase/firestore";
 
   let isNotificationsEnabled = false;
-  let disabled = false;
+  let disabled = true;
   const vapidKey = "BHdTrqFY8NJ5AitYs9KRtmCGvmHEPzB0UC15hAfmuBVyC4kqvpFufodywJlk7WGaCT5QLDMY2TomDqfMs77xGWM";
   const userId = auth.currentUser.uid;
   const userRef = doc(firestore, 'users', userId);
@@ -36,7 +36,6 @@
     if(!pushToken) return;
     
     isNotificationsEnabled = true;
-    
     try {
       await updateDoc(userRef, {
         fcmEnabled: true,
@@ -75,18 +74,14 @@
   }
 
   onMount(async () => {
-    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
-      disabled = true;
-    } else {
-      isNotificationsEnabled = (await getDoc(userRef)).data().fcmEnabled;
+    isNotificationsEnabled = (await getDoc(userRef)).data().fcmEnabled;
 
-      if (isNotificationsEnabled && Notification.permission != "granted"){
-        isNotificationsEnabled = false;
-        
-        await updateDoc(userRef, {
-          fcmEnabled: false,
-        });
-      }
+    if (isNotificationsEnabled && Notification.permission != "granted"){
+      isNotificationsEnabled = false;
+    }
+    
+    if (("Notification" in window) && ("serviceWorker" in navigator)) {
+      disabled = false;
     }
   });
 </script>
