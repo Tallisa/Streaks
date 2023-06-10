@@ -29,9 +29,10 @@
         streak: 0,
         taskDuration: 24 * 60,
         timeOutDelay: 48 * 60,
-        startOfStreak: new Date(),
-        lastCompleted: new Date(),
-        expireAt: new Date(Date.now() + (48 * 60 * timeMultiplier)),
+        streakStartedAt: new Date(),
+        lastCompletedAt: new Date(),
+        streakExtendAt: new Date(Date.now() + (24 * 60 * timeMultiplier)),
+        expiresAt: new Date(Date.now() + (48 * 60 * timeMultiplier)),
         ...getReminder(48 * 60)
       };
 
@@ -59,16 +60,20 @@
   const completeTask = async (id) => {
     const task = tasks.find((t) => t.id === id);
 
-    logEvent(analytics, "streak_extended", {
-      minutesLeft:
-        (new Date().getTime() - task.expireAt.getTime()) / 60 / 1000,
-    });
+    if(task.expiresAt){
+      logEvent(analytics, "streak_extended", {
+        minutesLeft:
+          (new Date().getTime() - task.expiresAt.getTime()) / 60 / 1000,
+      });
+    } else{
+      logEvent(analytics, "streak_restarted");
+    }
 
     // Update local state optimistically
     const updatedTasks = [...tasks];
     const index = updatedTasks.findIndex((t) => t.id === task.id);
-    updatedTasks[index].lastCompleted = new Date();
-    updatedTasks[index].expireAt = new Date(Date.now() + (task.timeOutDelay * timeMultiplier));
+    updatedTasks[index].lastCompletedAt = new Date();
+    updatedTasks[index].expiresAt = new Date(Date.now() + (task.timeOutDelay * timeMultiplier));
     updatedTasks[index] = {...updatedTasks[index], ...getReminder(task.timeOutDelay)}
     
     updateTasksInState(updatedTasks);
@@ -77,9 +82,9 @@
 
     // Update the task in Firestore
     await updateTasksInFirestore(docRef, {
-      lastCompleted: new Date(),
-      expireAt: new Date(Date.now() + (task.timeOutDelay * timeMultiplier)),
-      startOfStreak: task.startOfStreak,
+      lastCompletedAt: new Date(),
+      expiresAt: new Date(Date.now() + (task.timeOutDelay * timeMultiplier)),
+      streakStartedAt: task.streakStartedAt,
       ...getReminder(task.timeOutDelay)
     });
   }
@@ -106,18 +111,15 @@
     return querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-      lastCompleted: doc.data().lastCompleted
-        ? doc.data().lastCompleted.toDate()
+      lastCompletedAt: doc.data().lastCompletedAt
+        ? doc.data().lastCompletedAt.toDate()
         : null,
-      startOfStreak: doc.data().startOfStreak
-        ? doc.data().startOfStreak.toDate()
+      streakStartedAt: doc.data().streakStartedAt
+        ? doc.data().streakStartedAt.toDate()
         : null,
-      expireAt: doc.data().expireAt
-        ? doc.data().expireAt.toDate()
+      expiresAt: doc.data().expiresAt
+        ? doc.data().expiresAt.toDate()
         : null,
-      timeOutDelay: doc.data().timeOutDelay
-        ? doc.data().timeOutDelay
-        : 48 * 60,
     }));
   }
 
@@ -132,16 +134,16 @@
 
   const getReminder = (timeOutDelay) => {
     const halfWay = new Date(Date.now() + ((timeOutDelay * timeMultiplier)/2));
-    const expireAt = new Date(Date.now() + (timeOutDelay * timeMultiplier));
-    const fiveHoursBefore = new Date(expireAt.getTime() - (5 * 60 * timeMultiplier));
-    const thirtyMinsBefore = new Date(expireAt.getTime() - (30 * timeMultiplier));
+    const expiresAt = new Date(Date.now() + (timeOutDelay * timeMultiplier));
+    const fiveHoursBefore = new Date(expiresAt.getTime() - (5 * 60 * timeMultiplier));
+    const thirtyMinsBefore = new Date(expiresAt.getTime() - (30 * timeMultiplier));
 
     return {
       'nextReminder': {'type': 'half_way', 'time': halfWay},
       'reminders': [
         {'type': 'five_hours_left', 'time': fiveHoursBefore},
         {'type': 'thirty_minutes_left', 'time': thirtyMinsBefore},
-        {'type': 'expired', 'time': expireAt},
+        {'type': 'expired', 'time': expiresAt},
       ]
     }
   }

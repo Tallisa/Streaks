@@ -11,34 +11,23 @@
   let minsLeft;
   let interval; // Variable to store the interval ID
 
-  const timeOutDelay = 48 * 60 * 60 * 1000;
-  const streakDelay = 24 * 60 * 60 * 1000;
-
   const calculateStreak = () => {
-    if (task.startOfStreak == null) {
-      streak = "🏁";
-      return;
-    }
-    const currentTime = Date.now();
-    const timeElapsed = currentTime - task.startOfStreak.getTime();
-    const streakDays = Math.floor(timeElapsed / streakDelay);
-
-    if (streakDays < 1) {
+    if (task.streak < 1) {
       streak = "🏁";
     } else {
-      streak = streakDays + "x🔥";
+      streak = task.streak + "x🔥";
     }
   };
 
   const calculateDeadline = () => {
-    if (task.lastCompleted == null) {
+    if (task.lastCompletedAt == null || task.expiresAt.getTime() < Date.now()) {
       expireTime = `expired`;
       hoursLeft = 0;
       minsLeft = 0;
-      task.startOfStreak = null;
       return;
     }
-    const deadline = task.lastCompleted.getTime() + timeOutDelay - Date.now();
+
+    const deadline = task.expiresAt.getTime() - Date.now();
     hoursLeft = Math.floor(deadline / (60 * 60 * 1000));
     minsLeft = Math.floor(deadline / (60 * 1000));
     if (hoursLeft <= 1) {
@@ -82,6 +71,7 @@
   onMount(() => {
     // Initial calculations
     recalculate();
+    console.log(task)
 
     // Start the interval to recalculate every minute
     interval = setInterval(recalculate, 60000);

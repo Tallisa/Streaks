@@ -1,0 +1,63 @@
+[debug] [2023-06-10T21:46:14.689Z] ----------------------------------------------------------------------
+[debug] [2023-06-10T21:46:14.691Z] Command:       /opt/homebrew/Cellar/node/20.2.0/bin/node /opt/homebrew/bin/firebase deploy --only functions
+[debug] [2023-06-10T21:46:14.691Z] CLI Version:   12.2.1
+[debug] [2023-06-10T21:46:14.691Z] Platform:      darwin
+[debug] [2023-06-10T21:46:14.691Z] Node Version:  v20.2.0
+[debug] [2023-06-10T21:46:14.691Z] Time:          Sun Jun 11 2023 03:16:14 GMT+0530 (India Standard Time)
+[debug] [2023-06-10T21:46:14.691Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2023-06-10T21:46:14.734Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2023-06-10T21:46:14.734Z] > authorizing via signed-in user (isalap99@gmail.com)
+[debug] [2023-06-10T21:46:14.734Z] [iam] checking project todo-streaks for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2023-06-10T21:46:14.735Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/todo-streaks:testIamPermissions [none]
+[debug] [2023-06-10T21:46:14.735Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/todo-streaks:testIamPermissions x-goog-quota-user=projects/todo-streaks
+[debug] [2023-06-10T21:46:14.735Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/todo-streaks:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2023-06-10T21:46:15.868Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/todo-streaks:testIamPermissions 200
+[debug] [2023-06-10T21:46:15.868Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/todo-streaks:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2023-06-10T21:46:15.869Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/todo-streaks/serviceAccounts/todo-streaks@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2023-06-10T21:46:15.869Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/todo-streaks/serviceAccounts/todo-streaks@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2023-06-10T21:46:16.964Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/todo-streaks/serviceAccounts/todo-streaks@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2023-06-10T21:46:16.964Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/todo-streaks/serviceAccounts/todo-streaks@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[info] 
+[info] === Deploying to 'todo-streaks'...
+[info] 
+[info] i  deploying functions 
+[info] ✔  functions: Finished running predeploy script. 
+[debug] [2023-06-10T21:46:16.970Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/todo-streaks [none]
+[debug] [2023-06-10T21:46:17.413Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/todo-streaks 200
+[debug] [2023-06-10T21:46:17.413Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/todo-streaks {"projectId":"todo-streaks","projectNumber":"963730327060","displayName":"todo-streaks","name":"projects/todo-streaks","resources":{"hostingSite":"todo-streaks"},"state":"ACTIVE","etag":"1_c27dc53e-09c0-4bfd-a21f-6c8285d8405b"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2023-06-10T21:46:17.415Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudfunctions.googleapis.com [none]
+[debug] [2023-06-10T21:46:17.415Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/todo-streaks
+[debug] [2023-06-10T21:46:17.417Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/runtimeconfig.googleapis.com [none]
+[debug] [2023-06-10T21:46:17.417Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/runtimeconfig.googleapis.com x-goog-quota-user=projects/todo-streaks
+[debug] [2023-06-10T21:46:17.418Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudbuild.googleapis.com [none]
+[debug] [2023-06-10T21:46:17.418Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudbuild.googleapis.com x-goog-quota-user=projects/todo-streaks
+[debug] [2023-06-10T21:46:17.419Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/artifactregistry.googleapis.com [none]
+[debug] [2023-06-10T21:46:17.419Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/artifactregistry.googleapis.com x-goog-quota-user=projects/todo-streaks
+[debug] [2023-06-10T21:46:19.019Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/runtimeconfig.googleapis.com 200
+[debug] [2023-06-10T21:46:19.019Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/runtimeconfig.googleapis.com [omitted]
+[debug] [2023-06-10T21:46:19.036Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/artifactregistry.googleapis.com 200
+[debug] [2023-06-10T21:46:19.036Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/artifactregistry.googleapis.com [omitted]
+[warn] ⚠  artifactregistry: missing required API artifactregistry.googleapis.com. Enabling now... 
+[debug] [2023-06-10T21:46:19.037Z] >>> [apiv2][query] POST https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/artifactregistry.googleapis.com:enable [none]
+[debug] [2023-06-10T21:46:19.037Z] >>> [apiv2][(partial)header] POST https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/artifactregistry.googleapis.com:enable x-goog-quota-user=projects/todo-streaks
+[debug] [2023-06-10T21:46:19.041Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudfunctions.googleapis.com 200
+[debug] [2023-06-10T21:46:19.041Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudfunctions.googleapis.com [omitted]
+[info] ✔  functions: required API cloudfunctions.googleapis.com is enabled 
+[debug] [2023-06-10T21:46:19.078Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudbuild.googleapis.com 200
+[debug] [2023-06-10T21:46:19.078Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudbuild.googleapis.com [omitted]
+[warn] ⚠  functions: missing required API cloudbuild.googleapis.com. Enabling now... 
+[debug] [2023-06-10T21:46:19.079Z] >>> [apiv2][query] POST https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudbuild.googleapis.com:enable [none]
+[debug] [2023-06-10T21:46:19.079Z] >>> [apiv2][(partial)header] POST https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudbuild.googleapis.com:enable x-goog-quota-user=projects/todo-streaks
+[debug] [2023-06-10T21:46:20.789Z] <<< [apiv2][status] POST https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/artifactregistry.googleapis.com:enable 200
+[debug] [2023-06-10T21:46:20.789Z] <<< [apiv2][body] POST https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/artifactregistry.googleapis.com:enable [omitted]
+[debug] [2023-06-10T21:46:21.002Z] <<< [apiv2][status] POST https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudbuild.googleapis.com:enable 200
+[debug] [2023-06-10T21:46:21.003Z] <<< [apiv2][body] POST https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudbuild.googleapis.com:enable [omitted]
+[debug] [2023-06-10T21:46:30.793Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/artifactregistry.googleapis.com [none]
+[debug] [2023-06-10T21:46:30.794Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/artifactregistry.googleapis.com x-goog-quota-user=projects/todo-streaks
+[debug] [2023-06-10T21:46:31.008Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudbuild.googleapis.com [none]
+[debug] [2023-06-10T21:46:31.009Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/todo-streaks/services/cloudbuild.googleapis.com x-goog-quota-user=projects/todo-streaks
