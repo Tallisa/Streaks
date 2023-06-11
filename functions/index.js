@@ -7,9 +7,9 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
-const {onSchedule} = require("firebase-functions/v2/scheduler");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 // const { onRequest } = require("firebase-functions/v2/https");
-const {logger} = require("firebase-functions");
+const { logger } = require("firebase-functions");
 
 // The Firebase Admin SDK.
 const admin = require("firebase-admin");
@@ -18,7 +18,7 @@ const firestore = admin.firestore();
 const messaging = admin.messaging();
 
 
-exports.sendPushNotifications = onSchedule("* * * * *", async (event) => {
+exports.processTasks = onSchedule("* * * * *", async (event) => {
 // exports.helloWorld = onRequest(async (request, response) => {
   logger.log(`Started function execution`);
 
@@ -28,13 +28,12 @@ exports.sendPushNotifications = onSchedule("* * * * *", async (event) => {
   // Extend streaks
   logger.log(`Extending streaks`);
   const completedTasksQuerySnapshot = await tasksRef
-  // .where('lastCompletedAt', '<=', currentTime)
       .where("streakExtendAt", "<=", currentTime)
       .get();
 
   completedTasksQuerySnapshot.forEach((doc) => {
     const task = doc.data();
-    if (task.streakExtendAt > task.lastCompletedAt) {
+    if ((task.lastCompletedAt.toDate().getTime() < currentTime.getTime() - (task.taskDuration * 60 * 1000)) ) {
       logger.debug(`Streak task ${doc.id} is not completed yet`);
       return;
     }
@@ -44,15 +43,15 @@ exports.sendPushNotifications = onSchedule("* * * * *", async (event) => {
     // Update the streak
     doc.ref.update({
       streak: task.streak + 1,
-      streakExtendAt: new Date(task.lastCompletedAt.toDate().getTime() + (task.taskDuration * 60 * 1000)),
+      streakExtendAt: new Date(Date.now() + (task.taskDuration * 60 * 1000)),
     });
   });
 
   // Send Reminders
   logger.log(`Sending reminders`);
   const querySnapshot = await tasksRef
-      .where("nextReminder.time", "<=", currentTime)
-      .get();
+    .where("nextReminder.time", "<=", currentTime)
+    .get();
 
   querySnapshot.forEach(async (doc) => {
     const task = doc.data();
@@ -67,7 +66,7 @@ exports.sendPushNotifications = onSchedule("* * * * *", async (event) => {
 
     if (userDoc.exists) {
       const user = userDoc.data();
-      await sendReminderNotification({id: userDoc.id, ...user}, task);
+      await sendReminderNotification({ id: userDoc.id, ...user }, task);
     } else {
       logger.warn(`User ${userId} does not exist`);
     }
@@ -87,8 +86,8 @@ exports.sendPushNotifications = onSchedule("* * * * *", async (event) => {
   // Reset expired tasks
   logger.log(`Resetting expired tasks`);
   const expiredTasksQuerySnapshot = await tasksRef
-      .where("expiresAt", "<=", currentTime)
-      .get();
+    .where("expiresAt", "<=", currentTime)
+    .get();
 
   expiredTasksQuerySnapshot.forEach((doc) => {
     const task = doc.data();
@@ -118,7 +117,10 @@ const sendReminderNotification = async (user, task) => {
 
     logger.debug(`Sending push notification for task ${task.id} to user ${user.id}`);
     const notificationTitle = getNotificationTitle(task.nextReminder.type);
-    const notificationBody = task.text;
+    let notificationBody = `Don't forget to ${task.text}!`
+    if (task.nextReminder.type === "expired") {
+      notificationBody = `Your streak for "${task.text}" has expired after ${task.streak} days.`
+    }
 
     const message = {
       notification: {
@@ -140,13 +142,13 @@ const getNotificationTitle = (reminderType) => {
   // Set the notification title based on the reminder type
   switch (reminderType) {
     case "half_way":
-      return "Halfway Reminder";
+      return "Reminder!";
     case "five_hours_left":
-      return "5 Hours Left Reminder";
+      return "Running Out of Time!";
     case "thirty_minutes_left":
-      return "30 Minutes Left Reminder";
+      return "Now or Never!";
     case "expired":
-      return "Expired Reminder";
+      return "Better Luck Next Time!";
     default:
       return "Reminder";
   }

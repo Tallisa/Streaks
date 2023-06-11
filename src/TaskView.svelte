@@ -31,9 +31,9 @@
         timeOutDelay: 48 * 60,
         streakStartedAt: new Date(),
         lastCompletedAt: new Date(),
-        streakExtendAt: new Date(Date.now() + (24 * 60 * timeMultiplier)),
-        expiresAt: new Date(Date.now() + (48 * 60 * timeMultiplier)),
-        ...getReminder(48 * 60)
+        streakExtendAt: new Date(Date.now() + 24 * 60 * timeMultiplier),
+        expiresAt: new Date(Date.now() + 48 * 60 * timeMultiplier),
+        ...getReminder(48 * 60),
       };
 
       // Update local state optimistically
@@ -55,27 +55,39 @@
       const index = tasks.findIndex((t) => t.id === tempTask.id);
       tasks[index] = tempTask;
     }
-  }
-  
-  const completeTask = async (id) => {
-    const task = tasks.find((t) => t.id === id);
+  };
 
-    if(task.expiresAt){
+  const completeTask = async (id) => {
+    let task = tasks.find((t) => t.id === id);
+
+    if (task.expiresAt) {
       logEvent(analytics, "streak_extended", {
         minutesLeft:
           (new Date().getTime() - task.expiresAt.getTime()) / 60 / 1000,
       });
-    } else{
+    } else {
       logEvent(analytics, "streak_restarted");
     }
+
+    task.lastCompletedAt = new Date();
+    task.expiresAt = new Date(Date.now() + task.timeOutDelay * timeMultiplier);
+
+    if (task.streakExtendAt < new Date()){
+      task.streak = task.streak + 1;
+      task.streakExtendAt = new Date(Date.now() + (task.taskDuration * timeMultiplier));
+    }
+
+    if (!task.streakStartedAt) {
+      task.streakStartedAt = new Date();
+    }
+
+    task = { ...task, ...getReminder(task.timeOutDelay) };
 
     // Update local state optimistically
     const updatedTasks = [...tasks];
     const index = updatedTasks.findIndex((t) => t.id === task.id);
-    updatedTasks[index].lastCompletedAt = new Date();
-    updatedTasks[index].expiresAt = new Date(Date.now() + (task.timeOutDelay * timeMultiplier));
-    updatedTasks[index] = {...updatedTasks[index], ...getReminder(task.timeOutDelay)}
-    
+    updatedTasks[index] = task;
+
     updateTasksInState(updatedTasks);
 
     const docRef = doc(firestore, `users/${currentUid}/tasks`, id);
@@ -83,11 +95,13 @@
     // Update the task in Firestore
     await updateTasksInFirestore(docRef, {
       lastCompletedAt: new Date(),
-      expiresAt: new Date(Date.now() + (task.timeOutDelay * timeMultiplier)),
+      expiresAt: new Date(Date.now() + task.timeOutDelay * timeMultiplier),
       streakStartedAt: task.streakStartedAt,
-      ...getReminder(task.timeOutDelay)
+      streakExtendAt: task.streakExtendAt,
+      streak: task.streak,
+      ...getReminder(task.timeOutDelay),
     });
-  }
+  };
 
   const removeTask = async (id) => {
     // Update local state optimistically
@@ -100,58 +114,66 @@
     await deleteDoc(docRef);
 
     logEvent(analytics, "task_removed");
-  }
+  };
 
-  const loadTasks = async () =>  {
+  const loadTasks = async () => {
     const userCollectionRef = collection(
       firestore,
       `users/${currentUid}/tasks`
     );
     const querySnapshot = await getDocs(userCollectionRef);
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      lastCompletedAt: doc.data().lastCompletedAt
-        ? doc.data().lastCompletedAt.toDate()
-        : null,
-      streakStartedAt: doc.data().streakStartedAt
-        ? doc.data().streakStartedAt.toDate()
-        : null,
-      expiresAt: doc.data().expiresAt
-        ? doc.data().expiresAt.toDate()
-        : null,
-    }));
-  }
+    return querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+
+      return {
+        id: doc.id,
+        ...data,
+        lastCompletedAt: data.lastCompletedAt
+          ? data.lastCompletedAt.toDate()
+          : null,
+        streakStartedAt: data.streakStartedAt
+          ? data.streakStartedAt.toDate()
+          : null,
+        streakExtendAt: data.streakExtendAt
+          ? data.streakExtendAt.toDate()
+          : null,
+        expiresAt: data.expiresAt ? data.expiresAt.toDate() : null,
+      };
+    });
+  };
 
   const updateTasksInState = (updatedTasks) => {
     tasks = updatedTasks;
-  }
+  };
 
   const updateTasksInFirestore = async (docRef, data) => {
     await updateDoc(docRef, data);
     tasks = await loadTasks();
-  }
+  };
 
   const getReminder = (timeOutDelay) => {
-    const halfWay = new Date(Date.now() + ((timeOutDelay * timeMultiplier)/2));
-    const expiresAt = new Date(Date.now() + (timeOutDelay * timeMultiplier));
-    const fiveHoursBefore = new Date(expiresAt.getTime() - (5 * 60 * timeMultiplier));
-    const thirtyMinsBefore = new Date(expiresAt.getTime() - (30 * timeMultiplier));
+    const halfWay = new Date(Date.now() + (timeOutDelay * timeMultiplier) / 2);
+    const expiresAt = new Date(Date.now() + timeOutDelay * timeMultiplier);
+    const fiveHoursBefore = new Date(
+      expiresAt.getTime() - 5 * 60 * timeMultiplier
+    );
+    const thirtyMinsBefore = new Date(
+      expiresAt.getTime() - 30 * timeMultiplier
+    );
 
     return {
-      'nextReminder': {'type': 'half_way', 'time': halfWay},
-      'reminders': [
-        {'type': 'five_hours_left', 'time': fiveHoursBefore},
-        {'type': 'thirty_minutes_left', 'time': thirtyMinsBefore},
-        {'type': 'expired', 'time': expiresAt},
-      ]
-    }
-  }
+      nextReminder: { type: "half_way", time: halfWay },
+      reminders: [
+        { type: "five_hours_left", time: fiveHoursBefore },
+        { type: "thirty_minutes_left", time: thirtyMinsBefore },
+        { type: "expired", time: expiresAt },
+      ],
+    };
+  };
 
   onMount(async () => {
     tasks = await loadTasks();
   });
-
 </script>
 
 <main class="flex justify-center mt-9">
