@@ -7,6 +7,7 @@
     deleteDoc,
     doc,
     getDocs,
+    onSnapshot,
   } from "firebase/firestore";
   import { analytics, firestore, auth } from "./lib/firebase.js";
   import { signOut } from "firebase/auth";
@@ -20,6 +21,8 @@
   let tasks = null;
   const timeMultiplier = 60 * 1000;
   export let currentUid;
+
+  let unsubscribe = null;
 
   const addTask = async (newTask) => {
     if (newTask.trim() !== "") {
@@ -72,9 +75,11 @@
     task.lastCompletedAt = new Date();
     task.expiresAt = new Date(Date.now() + task.timeOutDelay * timeMultiplier);
 
-    if (task.streakExtendAt < new Date()){
+    if (task.streakExtendAt < new Date()) {
       task.streak = task.streak + 1;
-      task.streakExtendAt = new Date(Date.now() + (task.taskDuration * timeMultiplier));
+      task.streakExtendAt = new Date(
+        Date.now() + task.taskDuration * timeMultiplier
+      );
     }
 
     if (!task.streakStartedAt) {
@@ -172,7 +177,33 @@
   };
 
   onMount(async () => {
-    tasks = await loadTasks();
+    // tasks = await loadTasks();
+    unsubscribe = onSnapshot(
+      collection(firestore, `users/${currentUid}/tasks`),
+      (querySnapshot) => {
+          tasks = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            lastCompletedAt: data.lastCompletedAt
+              ? data.lastCompletedAt.toDate()
+              : null,
+            streakStartedAt: data.streakStartedAt
+              ? data.streakStartedAt.toDate()
+              : null,
+            streakExtendAt: data.streakExtendAt
+              ? data.streakExtendAt.toDate()
+              : null,
+            expiresAt: data.expiresAt ? data.expiresAt.toDate() : null,
+          };
+        });
+      }
+    );
+  });
+
+  onDestroy(() => {
+    unsubscribe();
   });
 </script>
 

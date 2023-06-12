@@ -1,5 +1,5 @@
 <script>
-  import { onMount, onDestroy, afterUpdate } from "svelte";
+  import { afterUpdate } from "svelte";
 
   export let task;
   export let completeTask;
@@ -9,7 +9,6 @@
   let streak;
   let hoursLeft;
   let minsLeft;
-  let interval; // Variable to store the interval ID
 
   const calculateStreak = () => {
     if (task.streak < 1) {
@@ -61,26 +60,6 @@
   const cubicBezierEaseIn = (t) => {
     return t * t * t;
   };
-
-  const recalculate = () => {
-    calculateDeadline();
-    calculateStreak();
-    changeFontColor(hoursLeft);
-  };
-
-  onMount(() => {
-    // Initial calculations
-    recalculate();
-    console.log(task)
-
-    // Start the interval to recalculate every minute
-    interval = setInterval(recalculate, 60000);
-  });
-
-  onDestroy(() => {
-    // Clear the interval when the component is destroyed
-    clearInterval(interval);
-  });
 
   afterUpdate(() => {
     calculateDeadline();
