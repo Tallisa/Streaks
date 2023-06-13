@@ -16,7 +16,7 @@
   }
 </script>
 
-<div class="flex justify-center items-center h-screen">
+<div class="center">
   <button
     on:click={loginWithGoogle}
     type="button"
@@ -68,4 +68,11 @@
     box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.25);
     cursor: not-allowed;
   }
+
+  .center {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
 </style>
