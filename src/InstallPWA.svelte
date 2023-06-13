@@ -47,8 +47,9 @@
 </script>
 
 {#if !installed && show}
+    <div class="backdrop">
     <div
-        class="pwaAdd max-w-sm p-5 bg-white border border-gray-200 rounded-3xl shadow"
+        class="pwaAdd p-5 bg-white border border-gray-200 rounded-3xl shadow"
     >
         <div class="flex">
             <h5
@@ -100,14 +101,25 @@
             </li>
         </ol>
     </div>
+</div>
 {/if}
 
 <style>
+    .backdrop{
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1000;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.25);
+    }
     .pwaAdd {
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
+        width: min(350px, 90%);
     }
 
     #close {
