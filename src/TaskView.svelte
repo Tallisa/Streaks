@@ -67,6 +67,7 @@
       logEvent(analytics, "streak_extended", {
         minutesLeft:
           (new Date().getTime() - task.expiresAt.getTime()) / 60 / 1000,
+        streak: task.streak,
       });
     } else {
       logEvent(analytics, "streak_restarted");
@@ -181,7 +182,7 @@
     unsubscribe = onSnapshot(
       collection(firestore, `users/${currentUid}/tasks`),
       (querySnapshot) => {
-          tasks = querySnapshot.docs.map((doc) => {
+        tasks = querySnapshot.docs.map((doc) => {
           const data = doc.data();
           return {
             id: doc.id,
