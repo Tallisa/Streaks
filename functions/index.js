@@ -19,7 +19,7 @@ const messaging = admin.messaging();
 
 
 exports.processTasks = onSchedule("* * * * *", async (event) => {
-// exports.helloWorld = onRequest(async (request, response) => {
+  // exports.helloWorld = onRequest(async (request, response) => {
   logger.log(`Started function execution`);
 
   const currentTime = new Date();
@@ -28,19 +28,19 @@ exports.processTasks = onSchedule("* * * * *", async (event) => {
   // Extend streaks
   logger.log(`Extending streaks`);
   const completedTasksQuerySnapshot = await tasksRef
-      .where("streakExtendAt", "<=", currentTime)
-      .get();
+    .where("streakExtendAt", "<=", currentTime)
+    .get();
 
   completedTasksQuerySnapshot.forEach((doc) => {
     const task = doc.data();
     try {
-      if ((task.lastCompletedAt.toDate().getTime() < currentTime.getTime() - (task.taskDuration * 60 * 1000)) ) {
+      if ((task.lastCompletedAt.toDate().getTime() < currentTime.getTime() - (task.taskDuration * 60 * 1000))) {
         logger.debug(`Streak task ${doc.id} is not completed yet`);
         return;
       }
-  
+
       logger.debug(`Updating the streak for task ${doc.id}`);
-  
+
       // Update the streak
       doc.ref.update({
         streak: task.streak + 1,
@@ -63,28 +63,26 @@ exports.processTasks = onSchedule("* * * * *", async (event) => {
       task.id = doc.id;
 
       const userId = doc.ref.path.split("/")[1]; // Extract the userId from the document path
-  
+
       // Retrieve user data to check push notification settings and tokens
       const userRef = firestore.collection("users").doc(userId);
-  
+
       const userDoc = await userRef.get();
-  
+
       if (userDoc.exists) {
         const user = userDoc.data();
         await sendReminderNotification({ id: userDoc.id, ...user }, task);
       } else {
         logger.warn(`User ${userId} does not exist`);
       }
-  
+
       // Set the next reminder
       const sortedReminders = task.reminders.sort((a, b) => a.time - b.time);
-      if (sortedReminders.length > 0) {
-        const nextReminder = sortedReminders.shift();
-        doc.ref.update({
-          nextReminder,
-          reminders: sortedReminders,
-        });
-      }
+      const nextReminder = sortedReminders.shift() || null;
+      doc.ref.update({
+        nextReminder,
+        reminders: sortedReminders,
+      });
     } catch (e) {
       logger.error(`Error sending reminder for task ${doc.id}: ${e}`);
     }
@@ -122,33 +120,29 @@ exports.processTasks = onSchedule("* * * * *", async (event) => {
 
 const sendReminderNotification = async (user, task) => {
   // Check if push notifications are enabled for the user
-  if (user.fcmEnabled) {
-    if (!user.fcmTokens || user.fcmTokens.length === 0) {
-      logger.debug(`Push notifications are enabled for user ${user.id} but no tokens are available`);
-      return;
-    }
-
-    logger.debug(`Sending push notification for task ${task.id} to user ${user.id}`);
-    const notificationTitle = getNotificationTitle(task.nextReminder.type);
-    let notificationBody = `Don't forget to ${task.text}!`
-    if (task.nextReminder.type === "expired") {
-      notificationBody = `Your streak for "${task.text}" has expired after ${task.streak} days.`
-    }
-
-    const message = {
-      notification: {
-        title: notificationTitle,
-        body: notificationBody,
-      },
-      tokens: user.fcmTokens,
-    };
-
-    const messages = await messaging.sendEachForMulticast(message);
-
-    logger.debug(`Sent ${user.fcmTokens.length} push notification for task ${task.id}, successful: ${messages.successCount}, failed: ${messages.failureCount}`);
-  } else {
-    logger.debug(`Push notifications are not enabled for user ${user.id}`);
+  if (!user.fcmTokens || user.fcmTokens.length === 0) {
+    logger.debug(`No push notification tokens for user ${user.id}`);
+    return;
   }
+
+  logger.debug(`Sending push notification for task ${task.id} to user ${user.id}`);
+  const notificationTitle = getNotificationTitle(task.nextReminder.type);
+  let notificationBody = `Don't forget to ${task.text}!`
+  if (task.nextReminder.type === "expired") {
+    notificationBody = `Your streak for "${task.text}" has expired after ${task.streak} days.`
+  }
+
+  const message = {
+    notification: {
+      title: notificationTitle,
+      body: notificationBody,
+    },
+    tokens: user.fcmTokens,
+  };
+
+  const messages = await messaging.sendEachForMulticast(message);
+
+  logger.debug(`Sent ${user.fcmTokens.length} push notification for task ${task.id}, successful: ${messages.successCount}, failed: ${messages.failureCount}`);
 };
 
 const getNotificationTitle = (reminderType) => {

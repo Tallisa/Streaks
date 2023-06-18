@@ -19,6 +19,11 @@
         deferredPrompt = e;
     });
 
+    window.addEventListener("appinstalled", () => {
+        deferredPrompt = undefined;
+        installed = true;
+    });
+
     const iOS = () => {
         return (
             [
@@ -92,7 +97,10 @@
 </script>
 
 {#if !installed && !showRecently && hasOneTask && (deferredPrompt !== undefined || onIOS)}
-    <div class="backdrop" in:scale={{ delay: 1500, duration: 0, easing: quintOut }} >
+    <div
+        class="backdrop"
+        in:scale={{ delay: 1500, duration: 0, easing: quintOut }}
+    >
         <div
             class="pwaAdd p-5 bg-white border border-gray-200 rounded-3xl shadow"
             in:scale={{ delay: 1500, duration: 600, easing: quintOut }}

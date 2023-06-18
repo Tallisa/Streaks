@@ -4,27 +4,33 @@
   import { getToken } from "firebase/messaging";
   import { logEvent } from "firebase/analytics";
   import { messaging, firestore, analytics, auth } from "./lib/firebase.js";
-  import { updateDoc, doc, arrayUnion, arrayRemove, getDoc } from "firebase/firestore";
+  import {
+    setDoc,
+    doc,
+    arrayUnion,
+    arrayRemove,
+    getDoc,
+  } from "firebase/firestore";
 
   let isNotificationsEnabled = undefined;
-  let disabled = true;
-  const vapidKey = "BHdTrqFY8NJ5AitYs9KRtmCGvmHEPzB0UC15hAfmuBVyC4kqvpFufodywJlk7WGaCT5QLDMY2TomDqfMs77xGWM";
+  let disabled = false;
+  const vapidKey =
+    "BHdTrqFY8NJ5AitYs9KRtmCGvmHEPzB0UC15hAfmuBVyC4kqvpFufodywJlk7WGaCT5QLDMY2TomDqfMs77xGWM";
   const userId = auth.currentUser.uid;
-  const userRef = doc(firestore, 'users', userId);
+  const userRef = doc(firestore, "users", userId);
 
   const disableNotifications = async () => {
     try {
       isNotificationsEnabled = false;
-      
-      await updateDoc(userRef, {
-        fcmEnabled: false,
-      });
-
       const pushToken = await getPushToken();
-      if(pushToken) {
-        await updateDoc(userRef, {
-          fcmTokens: arrayRemove(pushToken),
-        });
+      if (pushToken) {
+        await setDoc(
+          userRef,
+          {
+            fcmTokens: arrayRemove(pushToken),
+          },
+          { merge: true }
+        );
       }
       logEvent(analytics, "notifications_disabled");
     } catch (error) {
@@ -34,16 +40,17 @@
 
   const enableNotifications = async () => {
     const pushToken = await getPushToken();
-    if(!pushToken) return;
+    if (!pushToken) return;
 
     isNotificationsEnabled = true;
     try {
-      await updateDoc(userRef, {
-        fcmEnabled: true,
-      });
-      await updateDoc(userRef, {
-        fcmTokens: arrayUnion(pushToken),
-      });
+      await setDoc(
+        userRef,
+        {
+          fcmTokens: arrayUnion(pushToken),
+        },
+        { merge: true }
+      );
       logEvent(analytics, "notifications_enabled");
     } catch (error) {
       console.error("Error enabling notifications:", error);
@@ -51,28 +58,26 @@
   };
 
   const showReasonForDisable = () => {
-    if (!("Notification" in window)){
+    if (!("Notification" in window)) {
       alert("Your browser does not support notifications.");
-    }
-    else if (!("serviceWorker" in navigator)){
+    } else if (!("serviceWorker" in navigator)) {
       alert("Your browser does not support service workers.");
-    }
-    else if (Notification.permission === "denied") {
+    } else if (Notification.permission === "denied") {
       alert(
         "You have blocked notifications. Please enable them in your browser."
       );
     }
   };
 
-  const getPushToken = async () => {
+  const getPushToken = async (skipCheck) => {
     try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") return null;
-      
+      if (!skipCheck) {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") return null;
+      }
+
       const registration = await navigator.serviceWorker.register(
-        import.meta.env.MODE === "production"
-          ? "/sw.js"
-          : "/dev-sw.js?dev-sw",
+        import.meta.env.MODE === "production" ? "/sw.js" : "/dev-sw.js?dev-sw",
         {
           type: import.meta.env.MODE === "production" ? "classic" : "module",
         }
@@ -87,18 +92,23 @@
       console.error("An error occurred while getting push token:", error);
       return null;
     }
-  }
+  };
 
   onMount(async () => {
-    isNotificationsEnabled = (await getDoc(userRef)).data()?.fcmEnabled || false;
-
-    if (("Notification" in window) && ("serviceWorker" in navigator)) {
-      disabled = false;
-    }
-
-    if (isNotificationsEnabled && Notification?.permission != "granted"){
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+      disabled = true;
       isNotificationsEnabled = false;
+      return
     }
+
+    if (Notification?.permission != "granted") {
+      isNotificationsEnabled = false;
+      return;
+    }
+
+    const pushToken = await getPushToken(true);
+    const registredTokens = (await getDoc(userRef)).data()?.fcmTokens;
+    isNotificationsEnabled = registredTokens?.includes(pushToken) || false;
   });
 </script>
 
@@ -111,7 +121,7 @@
       class="!p-2"
       size="xl"
       on:click={showReasonForDisable}
-      >
+    >
       <svg
         class="w-6 h-6"
         fill="none"
@@ -128,8 +138,7 @@
         />
       </svg>
     </Button>
-  {:else}
-    {#if isNotificationsEnabled}
+  {:else if isNotificationsEnabled}
     <Button
       color="green"
       pill={true}
@@ -154,7 +163,7 @@
         />
       </svg>
     </Button>
-    {:else}
+  {:else}
     <Button
       color="red"
       pill={true}
@@ -179,6 +188,5 @@
         />
       </svg>
     </Button>
-    {/if}
   {/if}
 {/if}
