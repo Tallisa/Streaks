@@ -1,10 +1,23 @@
 <script>
-    import { onMount } from "svelte";
+    import { afterUpdate, onMount } from "svelte";
     import safari from "./assets/safari.png";
     import share from "./assets/share.png";
+    import { analytics } from "./lib/firebase.js";
+    import { logEvent } from "firebase/analytics";
+    import { tasksStore } from "./stores";
+    import { scale } from "svelte/transition";
+    import { quintOut } from "svelte/easing";
 
-    let show = false;
     let installed = true;
+    let onIOS = false;
+    let deferredPrompt = undefined;
+    let showRecently = true;
+    let hasOneTask = false;
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+    });
 
     const iOS = () => {
         return (
@@ -22,34 +35,67 @@
     };
 
     const close = () => {
-        show = false;
+        showRecently = true;
         localStorage.setItem("lastShown", Date.now().toString());
     };
 
-    onMount(() => {
-        if (iOS()) {
-            if (!window.matchMedia("(display-mode: standalone)").matches) {
-                installed = false;
+    const installPWA = async () => {
+        // Show the install prompt
+        deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === "accepted") {
+            installed = true;
+            close();
+            logEvent(analytics, "pwa_prompt_accepted");
+        } else {
+            logEvent(analytics, "pwa_prompt_declined");
+        }
+    };
+
+    onMount(async () => {
+        onIOS = iOS();
+        if (!window.matchMedia("(display-mode: standalone)").matches) {
+            installed = false;
+        }
+        const lastShown = parseInt(localStorage.getItem("lastShown"));
+        if (lastShown) {
+            const now = Date.now();
+            const diff = now - lastShown;
+            const days = diff / (1000 * 60 * 60 * 24);
+            if (days > 7) {
+                showRecently = false;
             }
-            const lastShown = parseInt(localStorage.getItem("lastShown"));
-            if (lastShown) {
-                const now = Date.now();
-                const diff = now - lastShown;
-                const days = diff / (1000 * 60 * 60 * 24);
-                if (days > 7) {
-                    show = true;
-                }
-            } else {
-                show = true;
-            }
+        } else {
+            showRecently = false;
+        }
+    });
+
+    tasksStore.subscribe((value) => {
+        if (value.length === 0) {
+            hasOneTask = false;
+        } else {
+            hasOneTask = true;
+        }
+    });
+
+    afterUpdate(() => {
+        if (
+            !installed &&
+            !showRecently &&
+            hasOneTask &&
+            (deferredPrompt !== undefined || onIOS)
+        ) {
+            logEvent(analytics, "pwa_prompt_shown", { on_ios: onIOS });
         }
     });
 </script>
 
-{#if !installed && show}
-    <div class="backdrop">
+{#if !installed && !showRecently && hasOneTask && (deferredPrompt !== undefined || onIOS)}
+    <div class="backdrop" in:scale={{ delay: 1500, duration: 0, easing: quintOut }} >
         <div
             class="pwaAdd p-5 bg-white border border-gray-200 rounded-3xl shadow"
+            in:scale={{ delay: 1500, duration: 600, easing: quintOut }}
         >
             <div class="flex">
                 <h5
@@ -73,35 +119,44 @@
                 >
                 and <span class="font-semibold">offline support</span>.
             </p>
-            <ol class="list-decimal font-normal text-gray-500 ml-7">
-                <li>
-                    Open <span
-                        class="underline decoration-indigo-300 decoration-2"
-                        >Streaks</span
-                    >
-                    in safari
-                    <img
-                        class="inline-block pb-1"
-                        width="16px"
-                        src={safari}
-                        alt="safari icon"
-                    />
-                </li>
-                <li>
-                    Tap on <img
-                        class="inline-block pb-1"
-                        width="16px"
-                        src={share}
-                        alt="share icon"
-                    />
-                </li>
-                <li>
-                    Select <button
-                        class="bg-gray-500 px-2 text-slate-100 text-xs"
-                        >Add to Home Screen</button
-                    >
-                </li>
-            </ol>
+            {#if deferredPrompt}
+                <button
+                    class="bg-green-500 px-4 text-white text-base rounded-md"
+                    on:click={installPWA}
+                >
+                    Install
+                </button>
+            {:else}
+                <ol class="list-decimal font-normal text-gray-500 ml-7">
+                    <li>
+                        Open <span
+                            class="underline decoration-indigo-300 decoration-2"
+                            >Streaks</span
+                        >
+                        in safari
+                        <img
+                            class="inline-block pb-1"
+                            width="16px"
+                            src={safari}
+                            alt="safari icon"
+                        />
+                    </li>
+                    <li>
+                        Tap on <img
+                            class="inline-block pb-1"
+                            width="16px"
+                            src={share}
+                            alt="share icon"
+                        />
+                    </li>
+                    <li>
+                        Select <button
+                            class="bg-gray-500 px-2 text-slate-100 text-xs"
+                            >Add to Home Screen</button
+                        >
+                    </li>
+                </ol>
+            {/if}
         </div>
     </div>
 {/if}

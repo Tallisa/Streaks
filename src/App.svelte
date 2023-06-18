@@ -4,7 +4,7 @@
   import AuthView from "./AuthView.svelte";
   import { auth } from "./lib/firebase.js";
   import { registerSW } from "virtual:pwa-register";
-    import InstallPWA from "./InstallPWA.svelte";
+  import InstallPWA from "./InstallPWA.svelte";
 
   registerSW({ immediate: true });
 
@@ -31,10 +31,10 @@
   </div>
 {:else if user}
   <TaskView currentUid={user.uid} />
-  <InstallPWA />
 {:else}
   <AuthView />
 {/if}
+<InstallPWA />
 
 <style>
   .loader {

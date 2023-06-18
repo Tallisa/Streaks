@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from "svelte";
+  import { writable } from 'svelte/store';
   import {
     collection,
     addDoc,
@@ -17,6 +18,7 @@
   import Notification from "./Notification.svelte";
   import { ListPlaceholder } from "flowbite-svelte";
   import { Button } from "flowbite-svelte";
+    import { tasksStore } from "./stores.js";
 
   let tasks = null;
   const timeMultiplier = 60 * 1000;
@@ -199,6 +201,7 @@
             expiresAt: data.expiresAt ? data.expiresAt.toDate() : null,
           };
         });
+        tasksStore.set(tasks);
       }
     );
   });
