@@ -33,18 +33,22 @@ exports.processTasks = onSchedule("* * * * *", async (event) => {
 
   completedTasksQuerySnapshot.forEach((doc) => {
     const task = doc.data();
-    if ((task.lastCompletedAt.toDate().getTime() < currentTime.getTime() - (task.taskDuration * 60 * 1000)) ) {
-      logger.debug(`Streak task ${doc.id} is not completed yet`);
-      return;
+    try {
+      if ((task.lastCompletedAt.toDate().getTime() < currentTime.getTime() - (task.taskDuration * 60 * 1000)) ) {
+        logger.debug(`Streak task ${doc.id} is not completed yet`);
+        return;
+      }
+  
+      logger.debug(`Updating the streak for task ${doc.id}`);
+  
+      // Update the streak
+      doc.ref.update({
+        streak: task.streak + 1,
+        streakExtendAt: new Date(Date.now() + (task.taskDuration * 60 * 1000)),
+      });
+    } catch (e) {
+      logger.error(`Error updating the streak for task ${doc.id}: ${e}`);
     }
-
-    logger.debug(`Updating the streak for task ${doc.id}`);
-
-    // Update the streak
-    doc.ref.update({
-      streak: task.streak + 1,
-      streakExtendAt: new Date(Date.now() + (task.taskDuration * 60 * 1000)),
-    });
   });
 
   // Send Reminders
@@ -55,30 +59,34 @@ exports.processTasks = onSchedule("* * * * *", async (event) => {
 
   querySnapshot.forEach(async (doc) => {
     const task = doc.data();
-    task.id = doc.id;
+    try {
+      task.id = doc.id;
 
-    const userId = doc.ref.path.split("/")[1]; // Extract the userId from the document path
-
-    // Retrieve user data to check push notification settings and tokens
-    const userRef = firestore.collection("users").doc(userId);
-
-    const userDoc = await userRef.get();
-
-    if (userDoc.exists) {
-      const user = userDoc.data();
-      await sendReminderNotification({ id: userDoc.id, ...user }, task);
-    } else {
-      logger.warn(`User ${userId} does not exist`);
-    }
-
-    // Set the next reminder
-    const sortedReminders = task.reminders.sort((a, b) => a.time - b.time);
-    if (sortedReminders.length > 0) {
-      const nextReminder = sortedReminders.shift();
-      doc.ref.update({
-        nextReminder,
-        reminders: sortedReminders,
-      });
+      const userId = doc.ref.path.split("/")[1]; // Extract the userId from the document path
+  
+      // Retrieve user data to check push notification settings and tokens
+      const userRef = firestore.collection("users").doc(userId);
+  
+      const userDoc = await userRef.get();
+  
+      if (userDoc.exists) {
+        const user = userDoc.data();
+        await sendReminderNotification({ id: userDoc.id, ...user }, task);
+      } else {
+        logger.warn(`User ${userId} does not exist`);
+      }
+  
+      // Set the next reminder
+      const sortedReminders = task.reminders.sort((a, b) => a.time - b.time);
+      if (sortedReminders.length > 0) {
+        const nextReminder = sortedReminders.shift();
+        doc.ref.update({
+          nextReminder,
+          reminders: sortedReminders,
+        });
+      }
+    } catch (e) {
+      logger.error(`Error sending reminder for task ${doc.id}: ${e}`);
     }
   });
 
@@ -91,17 +99,22 @@ exports.processTasks = onSchedule("* * * * *", async (event) => {
 
   expiredTasksQuerySnapshot.forEach((doc) => {
     const task = doc.data();
-    logger.debug(`Resetting the expired task ${doc.id}`);
+    try {
+      logger.debug(`Resetting the expired task ${doc.id}`);
 
-    // Reset the task
-    doc.ref.update({
-      expiresAt: null,
-      lastCompletedAt: null,
-      streakStartedAt: null,
-      streak: 0,
-      nextReminder: null,
-      reminders: [],
-    });
+      // Reset the task
+      doc.ref.update({
+        expiresAt: null,
+        lastCompletedAt: null,
+        streakStartedAt: null,
+        streakExtendAt: null,
+        streak: 0,
+        nextReminder: null,
+        reminders: [],
+      });
+    } catch (e) {
+      logger.error(`Error resetting the expired task ${doc.id}: ${e}`);
+    }
   });
 
   // response.send("Hello from Firebase!");
