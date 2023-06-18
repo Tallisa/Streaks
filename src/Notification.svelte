@@ -94,7 +94,6 @@
 
     if (("Notification" in window) && ("serviceWorker" in navigator)) {
       disabled = false;
-      isNotificationsEnabled = false;
     }
 
     if (isNotificationsEnabled && Notification?.permission != "granted"){
